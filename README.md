@@ -1,6 +1,6 @@
 # haar_cliff_mpt
 
-This is a repository containing all of my work from Summer 2021.
+This is a repository containing all of my work in Roger Melko's group from Summer 2021.
 
 ## Effect of Mølmer-Sørensen Angle on Critical Measurement Rate
 
