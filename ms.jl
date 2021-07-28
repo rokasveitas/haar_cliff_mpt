@@ -12,13 +12,10 @@ gate(::GateName"MS"; θ::Number) = gate("XX"; ϕ=θ)
 gate(::GateName"R"; θ::Number, φ::Number) = gate("Rn"; θ=θ, ϕ=φ-π/2, λ=-φ+π/2)
 
 gate(::GateName"Π0") = [ 1 0
-					     0 0 ]
+			 0 0 ]
 
 gate(::GateName"Π1") = [ 0 0
-						 0 1 ]
-
-gate(::GateName"Π01") = [ 1 1
-						  0 0 ]
+			 0 1 ]
 
 
 randomparams(::GateName"MS", args...; θ=π/4, rng=Random.GLOBAL_RNG) = (θ=θ,)  #θ=2*π * rand(rng),)  # second one is for full-random MS
@@ -34,7 +31,7 @@ function randomlayer(
 )
   layer = []
   for n in support
-    pars = randomparams(gatename; θ=θ, rng=rng) # the 2^n is for the Haar dimension
+    pars = randomparams(gatename; θ=θ, rng=rng) 
     gatepars = (
       if isempty(pars)
         (isempty(kwargs) ? nothing : values(kwargs))
@@ -51,7 +48,7 @@ end
 # Function to perform a projective measurement in z-basis on two neighboring qubits
 # (requires the definition of two additional gates)
 #
-# given by Stef
+# measurement! and entanglement_entropy were given by Stef
 
 function measurement!(ψ0::MPS, site::Int, cutoff::Real, maxdim::Real)
 	ψ = normalize!(copy(ψ0))
