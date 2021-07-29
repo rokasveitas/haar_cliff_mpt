@@ -8,3 +8,5 @@ My first question was extending the work in [this paper](https://arxiv.org/abs/2
 
 ## Side-by-Side Simulation of Haar and Clifford Circuits
 
+Circuits of the type examined above can be studied for many different choices of the random unitary gates.  One option is to sample uniformly from the entire two-qubit unitary group *U(4)*: this is possible due to the existence of the Haar measure, which is the unique translation-invariant probability measure for any locally-compact topological group, like *U(4)*.  This requires the full capabilities of our matrix product state (MPS) formalism for accurate simulation, which we do in PastaQ.  Another option is to sample from the Clifford group, which is the finite group that permutes the states which are "stabilized" by tensor products of single-qubit Pauli operators.  This group is interesting because it is efficiently simulable on a classical computer according to the stabilizer formalism as developed by Gottesman (2004 or whatever).
+
