@@ -160,10 +160,8 @@ function ent(s::Stabilizer, fir::Int, las::Int; canon=true)
 		e = es[stabi,:]
 		if e[1] < fir && e[2] <= las && e[2] >= fir
 			crossings += 1
-			#println(stabi)
 		elseif e[2] > las && e[1] >= fir && e[1] <= las
 			crossings += 1
-			#println(stabi)
 		end
 	end
 
@@ -174,7 +172,6 @@ function colpermute(s::Stabilizer, perm)
 	r = copy(s)
 	return colpermute!(r, perm)
 end
-
 
 function mutual_inf(s::Stabilizer, A::Union{Vector{Int}, Int}, B::Union{Vector{Int}, Int})
 
@@ -192,28 +189,13 @@ function mutual_inf(s::Stabilizer, A::Union{Vector{Int}, Int}, B::Union{Vector{I
 
 	Al = size(A)[1]
 	Bl = size(B)[1]
-	
-	# print("A: ")
-	# println(A)
-	# println(Al)
-	# print("B: ")
-	# println(B)
-	# println(Bl)
 
 	perm = vcat(A, B, [i for i=1:s.nqubits if !in(i, A) && !in(i, B)])
 	r = colpermute(s, perm)
 
-	# println(perm)
-
 	AB = ent(r, 1, Al + Bl)
-	# print("AB: ")
-	# println(AB)
 	A = ent(r, 1, Al)
-	# print("A: ")
-	# println(A)
 	B = ent(r, Al + 1, Al + Bl)
-	# print("B: ")
-	# println(B)
 
 	return A + B - AB
 end
@@ -319,11 +301,6 @@ function avg_S(N::Int,
 		ents = zeros(siz)
 	end
 
-	# println("siz: ")
-	# println(siz)
-	# println("ents: ")
-	# println(ents)
-
 	for i=1:it
 		if typeof(ents) <: Number
 			ents += run_brick(N, depth, p=p, evol=evol, f=f)[2]
@@ -380,33 +357,3 @@ function find_pow(x::Vector, y::Vector)
 
 	return (pow=beta, coef=exp(alph), n=n)
 end
-
-function avg_mut(N::Int,
-				 depth::Int,
-				 it::Int,
-				 p=0)
-	m = zeros(N-1)
-	for i=1:it
-		s = run_brick(N, depth, p, false)
-		if !(typeof(s) <: Stabilizer)
-			println(typeof(s))
-			throw("oh noooo")
-		end
-		for q=2:N-1
-			m[q] += mutual_inf(s, 1, q)
-		end
-		if i%100 == 0
-			println(i)
-		end
-	end
-
-	m ./= it
-
-	return m
-end
-
-
-
-
-
-
