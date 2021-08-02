@@ -191,10 +191,10 @@ function main(args)
 	 depths = Vector{Int}(ones(28)) * 30
 	 depths[1:2] = [100, 75]
 
-	 blockarg = (iarg - 1) % 4
-	 offset = blockarg * 504
+	 blockarg = (iarg - 1) % 9
+	 offset = blockarg * 224
 	 
-	 for i = 1:50 # = 28*6*3
+	 for i = 1+offset : 224+offset
 	 	pind, Nind, θind = shuf_params[i]
 
 		p = (pind + 2) * 0.01
@@ -213,4 +213,19 @@ function main(args)
 end
 
 @time main(ARGS)
+
+
+# 12132.573044s = 3.37hr ~6hr for 50 calculations
+# 24hr would be 200 calculations
+# 2016 total points.  9*224 = 12*168 = 2016
+# 20 hrs for 224 each
+# 
+# 
+# 
+# 
+# 
+
+
+
+
 
