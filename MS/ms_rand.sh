@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=def-rgmelko
-#SBATCH --mem=124G
+#SBATCH --mem=120G
 #SBATCH --time=1-00:00:00
 #SBATCH --mail-user=rokas@mit.edu
 #SBATCH --mail-type=ALL
