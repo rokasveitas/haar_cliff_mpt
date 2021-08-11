@@ -12,14 +12,12 @@ for i=1:960
             continue
     end
     
-    θarg = (i - 1) % 4
-    
     for pind=1:28
         for Nind=1:6
-            for θind=1:3
+            for θind=1:12
                 if a[pind, Nind, θind] != 0
-                    s[pind, Nind, θind + 3*θarg] += a[pind, Nind, θind]
-                    denoms[pind, Nind, θind + 3*θarg] += 1
+                    s[pind, Nind, θind] += a[pind, Nind, θind]
+                    denoms[pind, Nind, θind] += 1
                 end
             end
         end
