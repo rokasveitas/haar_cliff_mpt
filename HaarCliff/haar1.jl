@@ -7,10 +7,81 @@ using ITensors
 using PastaQ
 import PastaQ: gate, randomlayer
 
-# Stolen from Stef: 
-# First attempt to calculate mutual information based on Renyi-2
-# Based on two copies of the system
-function mutual_inf(psi0::MPS, aval::Int, bmax::Int, M::Int)
+
+# two-qubit bit translated from 
+# 	http://www.itensor.org/docs.cgi?vers=cppv3&page=formulas/mps_two_rdm
+
+function mutual_inf(psi0::MPS, a::Int, b::Int)
+	psi = normalize!(copy(psi0))
+	N = length(psi)
+
+	# First: find the two-qubit density matrix for qubits a and b
+
+	# shift orthogonality center to a
+	orthogonalize!(psi, a)
+
+	psidag = dag(psi)
+	prime!(psidag, "Link")
+
+	# index linkin a to a-1
+	la = linkind(psi, a-1)
+
+	rho = prime(psi[a], la) * prime(psidag[a], "Site")
+
+	for k = a+1 : b-1
+		rho *= psi[k]
+		rho *= psidag[k]
+	end
+
+	lb = linkind(psi, b)
+
+	rho *= prime(psi[b], lb)
+	rho *= prime(psidag[b], "Site")
+
+	# Now we have the density matrix rho.  rho has indices sa, sb, sa', sb'.
+	# Next, compute the AB entanglement entropy.
+
+	sa = siteind(psi, a)
+	sb = siteind(psi, b)
+
+	U, S, V = svd(rho, sa, sb)
+
+	AB = 0.0
+	for i=1:dim(S, 1)
+		p = S[i,i]^2
+		AB -= p*log(p + 1e-20)
+	end
+	println("AB: ")
+	println(AB)
+
+	# Now compute individual A and B entanglement entropies.
+
+	U, S, V = isnothing(la) ? svd(psi[a], sa) : svd(psi[a], (la, sa))
+	A = 0.0
+	for i=1:dim(S, 1)
+		p = S[i,i]^2
+		A -= p*log(p + 1e-20)
+	end
+
+	println("A: ")
+	println(A)
+
+	orthogonalize!(psi, b)
+
+	U, S, V = isnothing(lb) ? svd(psi[b], sb) : svd(psi[b], (lb, sb))
+	B = 0.0
+	for i=1:dim(S, 1)
+		p = S[i,i]^2
+		B -= p*log(p + 1e-20)
+	end
+	println("B: ")
+	println(B)
+
+	return A + B - AB
+end
+
+
+function stef_mutual_inf(psi0::MPS, aval::Int, bmax::Int, M::Int)
 	psi = normalize!(copy(psi0))
 	N = length(psi)
 
@@ -123,36 +194,6 @@ function mutual_inf(psi0::MPS, aval::Int, bmax::Int, M::Int)
 	return I
 end
 
-# no longer stolen from Stef
-
-gate(::GateName"Π0") = [ 1 0
-					     0 0 ]
-
-gate(::GateName"Π1") = [ 0 0
-						 0 1 ]
-
-function randomlayer(
-  gatename::AbstractString,
-  support::Union{Vector{<:Int},Vector{Tuple},AbstractRange};
-  rng=Random.GLOBAL_RNG,
-  kwargs...,
-)
-  layer = []
-  for n in support
-    pars = randomparams(gatename, 4; rng=rng) # 4 is because it's a 4x4 matrix
-    gatepars = (
-      if isempty(pars)
-        (isempty(kwargs) ? nothing : values(kwargs))
-      else
-        merge(pars, values(kwargs))
-      end
-    )
-    g = (isnothing(gatepars) ? (gatename, n) : (gatename, n, gatepars))
-    push!(layer, g)
-  end
-  return layer
-end
-
 function measurement!(ψ0::MPS, site::Int, cutoff::Real, maxdim::Real)
 	ψ = normalize!(copy(ψ0))
 
@@ -190,6 +231,38 @@ end
 
 
 
+gate(::GateName"Π0") = [ 1 0
+					     0 0 ]
+
+gate(::GateName"Π1") = [ 0 0
+						 0 1 ]
+
+function randomlayer(
+  gatename::AbstractString,
+  support::Union{Vector{<:Int},Vector{Tuple},AbstractRange};
+  rng=Random.GLOBAL_RNG,
+  kwargs...,
+)
+  layer = []
+  for n in support
+    pars = randomparams(gatename, 4; rng=rng) # 4 is because it's a 4x4 matrix
+    gatepars = (
+      if isempty(pars)
+        (isempty(kwargs) ? nothing : values(kwargs))
+      else
+        merge(pars, values(kwargs))
+      end
+    )
+    g = (isnothing(gatepars) ? (gatename, n) : (gatename, n, gatepars))
+    push!(layer, g)
+  end
+  return layer
+end
+
+
+
+
+
 
 function run_brick(
   state::MPS,
@@ -201,7 +274,8 @@ function run_brick(
   evol::Bool=false,
   rng=Random.GLOBAL_RNG,
 )
-	ψ = state
+	ψ = normalize!(copy(state))
+	N = length(ψ)
 	S = evol ? [] : 0
 
 	bonds = PastaQ.lineararray(N)

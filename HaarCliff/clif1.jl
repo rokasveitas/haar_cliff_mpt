@@ -5,8 +5,16 @@ using Random
 using QuantumClifford
 using Serialization
 
-clifset = deserialize("cliffgates")
+clifset = deserialize("cliffgates")  # this is a 11520-element set containing all elements
+									 # of the 2-qubit Clifford group, created by randomly 
+									 # generating Clifford gates and adding them to
+									 # a set until the number of elements was the order
+									 # of the group.
 
+
+# calculates the endpoints of all of the stabilizers in a tableau
+#
+# is only really meaningful when canon_clip has been applied first
 function ends(s::Stabilizer)
 
 	ns, nq = size(s)
@@ -37,6 +45,10 @@ function ends(s::Stabilizer)
 	return (ends, dens)
 end
 
+
+# performs a row-reduction-like procedure to get a tableau into
+# "clipped gauge," in which the lengths of the stabilizers are 
+# meaningful
 function canon_clip(s::Stabilizer)
 
 	nq,ns = size(s)
@@ -142,13 +154,14 @@ function canon_clip(s::Stabilizer)
 	return sout
 end
 
+# computes the entanglement entropy of a contiguous region starting at fir and ending at las
 function ent(s::Stabilizer, fir::Int, las::Int; canon=true)
 
 	nq, ns = size(s)
 
 	d = ends(s)[2]
 
-	if canon && sum([d[:,j] for j=1:2]) != 2 .* ones(Int, nq)
+	if canon && sum([d[:,j] for j=1:2]) != 2 .* ones(Int, nq) # checks if the tableau is already clipped
 		s = canon_clip(s)
 	end
 
@@ -168,11 +181,15 @@ function ent(s::Stabilizer, fir::Int, las::Int; canon=true)
 	return crossings/2
 end
 
+# permutes the columns of a tableau, which was necessary because QuantumClifford only has colpermute!
 function colpermute(s::Stabilizer, perm)
 	r = copy(s)
 	return colpermute!(r, perm)
 end
 
+
+# computes the mutual information of s between A and B, where A and B are either vectors describing
+# not-necessarily-contiguous subsets of the qubits or just single qubits
 function mutual_inf(s::Stabilizer, A::Union{Vector{Int}, Int}, B::Union{Vector{Int}, Int})
 
 	if typeof(A) <: Int
@@ -200,6 +217,8 @@ function mutual_inf(s::Stabilizer, A::Union{Vector{Int}, Int}, B::Union{Vector{I
 	return A + B - AB
 end
 
+
+# implements a measure that Tim suggested, which is not used or relevant but was interesting
 function tim_meas(s::Stabilizer, a::Int, b::Int; print=false)
 
 	sc = copy(s)
@@ -231,7 +250,8 @@ function tim_meas(s::Stabilizer, a::Int, b::Int; print=false)
 
 end
 
-
+# runs a brick-wall simulation with Clifford gates, returning 
+# whatever quantity is calculated by f
 function run_brick(N::Int,
 				   depth::Int;
 				   p=0, 
@@ -279,7 +299,9 @@ function run_brick(N::Int,
 	return (s, ents)
 end
 
-
+# computes the average value of f over "it" iterations
+# 
+# also works on vector-valued f.
 function avg_S(N::Int,
 			   depth::Int,
 			   it::Int;
@@ -322,6 +344,10 @@ function avg_S(N::Int,
 	return ents
 end
 
+
+# finds the power law dependence of y on x by least-squares regression
+# 
+# this is used to find the mutual information fall-off power with the qubit separation
 function find_pow(x::Vector, y::Vector)
 	lx = copy(x)
 	ly = copy(y)
