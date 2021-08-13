@@ -27,8 +27,8 @@ end
 denoms = map(x -> x==0 ? 1 : x, denoms)
 s ./= denoms
 
-println("s is computed: ")
-println(s)
+# println("s is computed: ")
+# println(s)
 
 # Now we want to find out what the critical point is for each value of θ.  We will minimize
 # the mean-squared error
@@ -72,7 +72,7 @@ end
 
 serialize("Rs", Rs)
 
-
+serialize("denoms", denoms)
 
 
 
