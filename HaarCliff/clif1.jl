@@ -1,6 +1,5 @@
 
 using LinearAlgebra
-using Plots
 using Random
 using QuantumClifford
 using Serialization
@@ -252,11 +251,11 @@ end
 
 # runs a brick-wall simulation with Clifford gates, returning 
 # whatever quantity is calculated by f
-function run_brick(N::Int,
-				   depth::Int;
-				   p=0, 
-				   evol=false,
-				   f = x -> 0)
+function run_brick_clif(N::Int,
+				   		depth::Int;
+				   		p=0, 
+				   		evol=false,
+				 		f = x -> 0)
 
 	s = one(Stabilizer, N)
 
@@ -302,7 +301,7 @@ end
 # computes the average value of f over "it" iterations
 # 
 # also works on vector-valued f.
-function avg_S(N::Int,
+function clif_avg_S(N::Int,
 			   depth::Int,
 			   it::Int;
 			   p=0, 

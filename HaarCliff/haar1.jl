@@ -1,6 +1,5 @@
 
 using LinearAlgebra
-using Plots
 using Random
 using Statistics
 using ITensors
@@ -8,8 +7,8 @@ using PastaQ
 import PastaQ: gate, randomlayer
 
 
-# two-qubit bit translated from 
-# 	http://www.itensor.org/docs.cgi?vers=cppv3&page=formulas/mps_two_rdm
+# two-qubit reduced density matrix portion translated from 
+# http://www.itensor.org/docs.cgi?vers=cppv3&page=formulas/mps_two_rdm
 
 function mutual_inf(psi0::MPS, a::Int, b::Int)
 	psi = normalize!(copy(psi0))
@@ -51,8 +50,8 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 		p = S[i,i]^2
 		AB -= p*log(p + 1e-20)
 	end
-	println("AB: ")
-	println(AB)
+	# println("AB: ")
+	# println(AB)
 
 	# Now compute individual A and B entanglement entropies.
 
@@ -63,8 +62,8 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 		A -= p*log(p + 1e-20)
 	end
 
-	println("A: ")
-	println(A)
+	# println("A: ")
+	# println(A)
 
 	orthogonalize!(psi, b)
 
@@ -74,8 +73,8 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 		p = S[i,i]^2
 		B -= p*log(p + 1e-20)
 	end
-	println("B: ")
-	println(B)
+	# println("B: ")
+	# println(B)
 
 	return A + B - AB
 end
@@ -212,6 +211,8 @@ function measurement!(ψ0::MPS, site::Int, cutoff::Real, maxdim::Real)
 	normalize!(ψ)
 	ψ0[:] = ψ
 
+	return σ == 0 ? 0x0 : 0x2
+
 end
 
 function entanglement_entropy(ψ0::MPS, b::Int, N::Int)
@@ -264,7 +265,7 @@ end
 
 
 
-function run_brick(
+function run_brick_haar(
   state::MPS,
   N::Int,
   depth::Int,
@@ -317,7 +318,7 @@ function run_brick(
 	return (ψ , S)
 end
 
-function run_savg(N::Int, depth::Int, ite::Int, p::Real, evol::Bool)
+function haar_avg_S(N::Int, depth::Int, ite::Int, p::Real, evol::Bool)
 	#global savg = zeros(depth)
 	#println(savg)
 	#ents = []

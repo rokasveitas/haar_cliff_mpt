@@ -17,11 +17,6 @@ One could write something nice that would more directly compute the
 required matrix to get a given two-qubit operator, but I found this easier
 and it's faster.
 
-The end serialized dictionary's keys are the stringified versions
-of the Clifford operators.  I could do this properly by fixing the
-hash and == functions on Clifford operators, but it wasn't working
-so I just did them with strings, which are unique and always work.
-
 =#
 
 

@@ -1,3 +1,15 @@
+#= 
+A CM is a composite type that has fields for a 2-qubit Clifford
+    operator in the stabilizer representation and for a
+    representation of the same operator as a 4x4 complex matrix
+    acting on the Hilbert space of the 2-qubit system.  The is
+    useful because we would like to replicate a given random
+    Clifford circuit in the MPS formalism, so we need to be able
+    to track the matrix representations of all 11520 2-qubit Clifford
+    operators.
+
+=#
+
 module CMs
 
 using QuantumClifford
@@ -6,7 +18,8 @@ import QuantumClifford: ⊗
 export CM,
        id, cx, cxx, cz, swap,
        z, x, ph, h,
-       i2m
+       i2m, QuantumClifford,
+       i1, i2
 
 struct CM
     c::CliffordOperator
@@ -20,7 +33,29 @@ function ⊗(a::CM, b::CM)
 end
 
 function ⊗(a::CliffordOperator, b::CliffordOperator)
-    return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 3, 2, 4]))
+    sizes = (size(a.tab)[2], size(b.tab)[2])
+
+    if sizes == (1, 1)
+        return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 3, 2, 4]))
+    end
+
+    if sizes == (2, 2)
+        return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 2, 5, 6, 3, 4, 7, 8]))
+    end
+
+    if sizes == (1, 2)
+        return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 3, 4, 2, 5, 6]))
+    end
+
+    if sizes == (2, 1)
+        return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 2, 5, 3, 4, 6]))
+    end
+
+    if sizes == (3, 1)
+        return CliffordOperator(permute!(a.tab ⊗ b.tab, [1, 2, 3, 7, 4, 5, 6, 8]))
+    end
+
+    throw("unsupported dimensions")
 
     # this is stupid, but QuantumClifford doesn't yet
     # implement ⊗ for CliffordOperators, but it does
@@ -122,6 +157,9 @@ x = CM(C"+X
          -Z", Matrix([0 1.
                       1. 0]))
 z = ph * ph
+
+i1 = z * z
+i2 = i1 ⊗ i1
 
 h = CM(Hadamard, hm)
 
