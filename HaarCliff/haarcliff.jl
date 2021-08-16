@@ -46,6 +46,8 @@ using .CMs
 
 cmset = deserialize("cmset")
 
+gate(::GateName"a"; a::Matrix) = a  # PastaQ gate name allowing me to pass arbitrary matrices
+
 function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
 
 	Ss = []
@@ -60,7 +62,7 @@ function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
 
 	for d in 1:depth
 
-		layer = ITensor[]
+		layer = []
 
 		# unitaries
 		for bond in bonds[(d-1)%2+1]
@@ -70,14 +72,9 @@ function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
 
 			apply!(s, gate.c, bond) #clifford
 
-			s1 = siteind(ψ, bond[1])
-			s2 = siteind(ψ, bond[2])
-
-			# ψ =  noprime(ψ * ITensor(gate.m, s1, s2, prime(s1), prime(s2)))
-			push!(layer, ITensor(gate.m, s1, s2, prime(s1), prime(s2))) #haar layer
+			push!(layer, ("a", (bond[1], bond[2]), (a=gate.m,))) #haar layer
 		end
 
-		# apply!(ψ, layer, svd_alg="recursive")
 		ψ = runcircuit(ψ, layer, svd_alg="recursive") #haar run
 
 		# measurements

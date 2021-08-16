@@ -25,7 +25,9 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 	# index linkin a to a-1
 	la = linkind(psi, a-1)
 
-	rho = prime(psi[a], la) * prime(psidag[a], "Site")
+	rho = isnothing(la) ? psi[a] : prime(psi[a], la)
+
+	rho *= prime(psidag[a], "Site")
 
 	for k = a+1 : b-1
 		rho *= psi[k]
@@ -34,7 +36,8 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 
 	lb = linkind(psi, b)
 
-	rho *= prime(psi[b], lb)
+	rho *= isnothing(lb) ? psi[b] : prime(psi[b], lb)
+
 	rho *= prime(psidag[b], "Site")
 
 	# Now we have the density matrix rho.  rho has indices sa, sb, sa', sb'.
@@ -76,7 +79,7 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 	# println("B: ")
 	# println(B)
 
-	return A + B - AB
+	return (A + B - AB) * 2 / log(2)
 end
 
 
