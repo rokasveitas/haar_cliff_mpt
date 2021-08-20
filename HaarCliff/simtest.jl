@@ -1,5 +1,19 @@
+#=
+
+hc_run doesn't work because my cmset isn't correct, but
+I was using this to try to do a simulataneous test: I 
+applied random Clifford gates to a stabilizer while applying
+those same gates to an MPS and wanted to verify that their
+resulting mutual informations were the same.  I ran som tests
+manually in shell, applying known gates repeatedly, and I
+was convinced that everything is working well except for cmset.
+
+=#
+
+
 include("cms.jl")   # QuantumClifford
 include("clif1.jl") # LinearAlgebra, Random, QuantumClifford, Serialization
+
 
 # ends(s::Stabilizer)
 # canon_clip(s::Stabilizer)
@@ -48,7 +62,27 @@ cmset = deserialize("cmset")
 
 gate(::GateName"a"; a::Matrix) = a  # PastaQ gate name allowing me to pass arbitrary matrices
 
-function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
+
+function mutual_inf(a::Any)
+	n = size(a)[1]
+
+	Ss = zeros(n, n)
+
+	for i=1:n, j=i+1:n
+		if i != j
+			Ss[i,j] = mutual_inf(a, i, j)
+		end
+	end
+
+	return Ss
+end
+
+function gatepars(mat::Matrix, bond1::Int, bond2::Int)
+	return ("a", (bond1, bond2), (a=mat,))
+end
+
+
+function hc_run(N::Int, depth::Int, p::Real)
 
 	Ss = []
 
@@ -68,11 +102,11 @@ function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
 		for bond in bonds[(d-1)%2+1]
 			gate = rand(cmset)
 
-			println(gate)
+			#println(gate)
 
 			apply!(s, gate.c, bond) #clifford
 
-			push!(layer, ("a", (bond[1], bond[2]), (a=gate.m,))) #haar layer
+			push!(layer, gatepars(gate.m, bond[1], bond[2])) #haar layer
 		end
 
 		ψ = runcircuit(ψ, layer, svd_alg="recursive") #haar run
@@ -95,7 +129,7 @@ function hc_run(N::Int, depth::Int, ite::Int, p::Real, a=1, b=3)
 
 
 
-		push!(Ss, [mutual_inf(s, a, b), floor(mutual_inf(ψ, a, b) * 20) / 20])
+		push!(Ss, [s, ψ])
 	end
 
 	return [Ss[i][j] for i=1:depth, j=1:2]

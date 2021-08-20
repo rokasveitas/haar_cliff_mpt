@@ -3,14 +3,17 @@ using LinearAlgebra
 using Random
 using Statistics
 using ITensors
+using Serialization
 using PastaQ
+using Plots
 import PastaQ: gate, randomlayer
+using Dates
 
 
 # two-qubit reduced density matrix portion translated from 
 # http://www.itensor.org/docs.cgi?vers=cppv3&page=formulas/mps_two_rdm
 
-function mutual_inf(psi0::MPS, a::Int, b::Int)
+function rho_two(psi0::MPS, a::Int, b::Int)
 	psi = normalize!(copy(psi0))
 	N = length(psi)
 
@@ -40,29 +43,40 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 
 	rho *= prime(psidag[b], "Site")
 
+	return rho
+end
+
+function mutual_inf(psi0::MPS, a::Int, b::Int)
+	psi = normalize!(copy(psi0))
+	rho = rho_two(psi, a, b)
+
 	# Now we have the density matrix rho.  rho has indices sa, sb, sa', sb'.
 	# Next, compute the AB entanglement entropy.
 
 	sa = siteind(psi, a)
 	sb = siteind(psi, b)
+	la = linkind(psi, a-1)
+	lb = linkind(psi, b)
 
 	U, S, V = svd(rho, sa, sb)
 
 	AB = 0.0
 	for i=1:dim(S, 1)
 		p = S[i,i]^2
-		AB -= p*log(p + 1e-20)
+		AB -= p*log2(p + 1e-20)
 	end
 	# println("AB: ")
 	# println(AB)
 
 	# Now compute individual A and B entanglement entropies.
 
+	orthogonalize!(psi, a)
+
 	U, S, V = isnothing(la) ? svd(psi[a], sa) : svd(psi[a], (la, sa))
 	A = 0.0
 	for i=1:dim(S, 1)
 		p = S[i,i]^2
-		A -= p*log(p + 1e-20)
+		A -= p*log2(p + 1e-20)
 	end
 
 	# println("A: ")
@@ -74,127 +88,19 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 	B = 0.0
 	for i=1:dim(S, 1)
 		p = S[i,i]^2
-		B -= p*log(p + 1e-20)
+		B -= p*log2(p + 1e-20)
 	end
 	# println("B: ")
 	# println(B)
 
-	return (A + B - AB) * 2 / log(2)
+	return (A + B - AB)
 end
 
+gate(::GateName"Π0") = [ 1 0
+					     0 0 ]
 
-function stef_mutual_inf(psi0::MPS, aval::Int, bmax::Int, M::Int)
-	psi = normalize!(copy(psi0))
-	N = length(psi)
-
-    # array to store information
-	I = zeros(4)
-
-    # draw samples (four sets since we want I_A, I_B and I_{A,B})
-	samps_1 = getsamples(psi, M, local_basis=["Z"])
-	samps_2 = getsamples(psi, M, local_basis=["Z"])
-	samp_data_1 = PastaQ.convertdatapoints(copy(samps_1); state=true)
-	samp_data_2 = PastaQ.convertdatapoints(copy(samps_2); state=true)
-
-    # evaluate entropies
-	a = [aval]
-	for (count, bval) in enumerate(aval+9:3:bmax)
-		b = [bval]
-
-		ab = zeros(2)
-		ab[1] = aval
-		ab[2] = bval
-
-        # switch subsets in copies of system
-		samp_data_a1_switch = copy(samp_data_1)
-		samp_data_a2_switch = copy(samp_data_2)
-		samp_data_b1_switch = copy(samp_data_1)
-		samp_data_b2_switch = copy(samp_data_2)
-		samp_data_ab1_switch = copy(samp_data_1)
-		samp_data_ab2_switch = copy(samp_data_2)
-
-		s = siteinds(psi)
-
-		trace_rho_a = 0.
-		trace_rho_b = 0.
-		trace_rho_ab = 0.
-
-        # get traces of density matrices from all samples
-		for m in 1:M
-			x1 = samp_data_1[m,:]
-			x2 = samp_data_2[m,:]
-
-			for n in a
-				samp_data_a1_switch[m,Int(n)] = samp_data_2[m,Int(n)]
-				samp_data_a2_switch[m,Int(n)] = samp_data_1[m,Int(n)]	
-			end
-
-			for n in b
-				samp_data_b1_switch[m,Int(n)] = samp_data_2[m,Int(n)]
-				samp_data_b2_switch[m,Int(n)] = samp_data_1[m,Int(n)]
-			end
-
-			for n in ab
-				samp_data_ab1_switch[m,Int(n)] = samp_data_2[m,Int(n)]
-				samp_data_ab2_switch[m,Int(n)] = samp_data_1[m,Int(n)]
-			end
-
-			xa1_switch = samp_data_a1_switch[m,:]
-			xa2_switch = samp_data_a2_switch[m,:]
-			xb1_switch = samp_data_b1_switch[m,:]
-			xb2_switch = samp_data_b2_switch[m,:]
-			xab1_switch = samp_data_ab1_switch[m,:]
-			xab2_switch = samp_data_ab2_switch[m,:]
-
-			psi_1 = dag(psi[1]) * state(x1[1], s[1])
-			psi_2 = dag(psi[1]) * state(x2[1], s[1])
-			psi_a1_switch = dag(psi[1]) * state(xa1_switch[1], s[1])
-			psi_a2_switch = dag(psi[1]) * state(xa2_switch[1], s[1])
-			psi_b1_switch = dag(psi[1]) * state(xb1_switch[1], s[1])
-			psi_b2_switch = dag(psi[1]) * state(xb2_switch[1], s[1])
-			psi_ab1_switch = dag(psi[1]) * state(xab1_switch[1], s[1])
-			psi_ab2_switch = dag(psi[1]) * state(xab2_switch[1], s[1])
-
-			for j in 2:N
-				psi_1_r = dag(psi[j]) * state(x1[j], s[j])
-				psi_2_r = dag(psi[j]) * state(x2[j], s[j])
-				psi_a1_switch_r = dag(psi[j]) * state(xa1_switch[j], s[j])
-				psi_a2_switch_r = dag(psi[j]) * state(xa2_switch[j], s[j])
-				psi_b1_switch_r = dag(psi[j]) * state(xb1_switch[j], s[j])
-				psi_b2_switch_r = dag(psi[j]) * state(xb2_switch[j], s[j])
-				psi_ab1_switch_r = dag(psi[j]) * state(xab1_switch[j], s[j])
-				psi_ab2_switch_r = dag(psi[j]) * state(xab2_switch[j], s[j])
-
-				psi_1 = psi_1 * psi_1_r
-				psi_2 = psi_2 * psi_2_r
-				psi_a1_switch = psi_a1_switch * psi_a1_switch_r
-				psi_a2_switch = psi_a2_switch * psi_a2_switch_r
-				psi_b1_switch = psi_b1_switch * psi_b1_switch_r
-				psi_b2_switch = psi_b2_switch * psi_b2_switch_r
-				psi_ab1_switch = psi_ab1_switch * psi_ab1_switch_r
-				psi_ab2_switch = psi_ab2_switch * psi_ab2_switch_r
-			end
-
-			trace_rho_a += (psi_a1_switch[] / psi_1[]) * (psi_a2_switch[] / psi_2[])
-			trace_rho_b += (psi_b1_switch[] / psi_1[]) * (psi_b2_switch[] / psi_2[])
-			trace_rho_ab += (psi_ab1_switch[] / psi_1[]) * (psi_ab2_switch[] / psi_2[])
-		end
-
-		trace_rho_a /= M
-		trace_rho_b /= M
-		trace_rho_ab /= M
-
-		entropy_a = - real(log2(trace_rho_a))
-		entropy_b = - real(log2(trace_rho_b))
-		entropy_ab = - real(log2(trace_rho_ab))
-
-		I[count] = entropy_a + entropy_b - entropy_ab
-
-		println(ab)
-	end
-
-	return I
-end
+gate(::GateName"Π1") = [ 0 0
+						 0 1 ]
 
 function measurement!(ψ0::MPS, site::Int, cutoff::Real, maxdim::Real)
 	ψ = normalize!(copy(ψ0))
@@ -233,14 +139,6 @@ function entanglement_entropy(ψ0::MPS, b::Int, N::Int)
 		return SvN
 end
 
-
-
-gate(::GateName"Π0") = [ 1 0
-					     0 0 ]
-
-gate(::GateName"Π1") = [ 0 0
-						 0 1 ]
-
 function randomlayer(
   gatename::AbstractString,
   support::Union{Vector{<:Int},Vector{Tuple},AbstractRange};
@@ -262,10 +160,6 @@ function randomlayer(
   end
   return layer
 end
-
-
-
-
 
 
 function run_brick_haar(
@@ -309,12 +203,12 @@ function run_brick_haar(
 		end
 
 		if evol && d%2 == 1
-			push!(S, entanglement_entropy(ψ, N÷2, N))
+			push!(S, mutual_inf(ψ, N÷3, 2*N÷3))
 		end
 	end
 
 	if !evol
-		S = entanglement_entropy(ψ, N÷2, N)
+		S = mutual_inf(ψ, N÷3, 2*N÷3)
 	end
 	#println(S)
 	#println(typeof(S))
@@ -330,12 +224,72 @@ function haar_avg_S(N::Int, depth::Int, ite::Int, p::Real, evol::Bool)
 
 	for i = 1:ite
 		ψ0 = productstate(N)
-		_, S = run_brick(ψ0, N, depth, p, evol=evol)
+		_, S = run_brick_haar(ψ0, N, depth, p, evol=evol)
 		
+		if size(s_avg) != size(S)
+			s_avg = zeros(size(S))
+		end
+
 		s_avg += S
 	end
 
-	s_avg ./= ite
-	return s_avg
+	if evol
+		return s_avg ./ ite
+	end
+
+	return s_avg / ite
 			
 end
+
+
+#if abspath(PROGRAM_FILE) == @__FILE__ # if run directly from shell
+
+function main()
+	beg = now()
+	
+
+	Ss = zeros(6, 4)
+	times = zeros(Millisecond, (6, 4))
+
+	las = now()
+
+	for N = 8:4:20
+		for p = 0.1:0.04:0.3
+			iN = N÷4 - 1
+			ip = Int(round(p/0.04 - 0.5)) - 1
+
+			Ss[ip, iN] = haar_avg_S(N, 2*N, 200, p, false)
+
+			this = now()
+
+			times[ip, iN] = this - las
+
+			println((iN, ip, times[ip, iN], Ss[ip, iN]))
+
+			las = this
+		end
+	end
+
+	fin = now()
+
+	print("Total: ")
+	println(fin - beg)
+	run(`say "all done"`)
+	println(Ss)
+	serialize("haar_s_3", (Ss, times))
+	show(plot(Ss))
+end
+
+main()
+
+
+
+
+
+
+
+
+
+
+
+
