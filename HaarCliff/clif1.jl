@@ -3,6 +3,8 @@ using LinearAlgebra
 using Random
 using QuantumClifford
 using Serialization
+using Dates
+using Plots
 
 clifset = deserialize("cliffgates")  # this is a 11520-element set containing all elements
 									 # of the 2-qubit Clifford group, created by randomly 
@@ -261,7 +263,7 @@ function run_brick_clif(N::Int,
 
 	nq, ns = size(s)
 
-	#ents = []
+	ents = []
 
 	bonds = [[[j, j+1] for j=1:2:N-1-N%2],
 			 [[j, j+1] for j=2:2:N-2+N%2]]
@@ -324,9 +326,9 @@ function clif_avg_S(N::Int,
 
 	for i=1:it
 		if typeof(ents) <: Number
-			ents += run_brick(N, depth, p=p, evol=evol, f=f)[2]
+			ents += run_brick_clif(N, depth, p=p, evol=evol, f=f)[2]
 		else
-			ents .+= run_brick(N, depth, p=p, evol=evol, f=f)[2]
+			ents .+= run_brick_clif(N, depth, p=p, evol=evol, f=f)[2]
 		end
 
 		# if i%100 == 0
@@ -382,3 +384,43 @@ function find_pow(x::Vector, y::Vector)
 
 	return (pow=beta, coef=exp(alph), n=n)
 end
+
+
+function main()
+	beg = now()
+
+	Ss = Array{Vector{Float64}}(undef, (6, 4))
+	times = zeros(Millisecond, (6, 4))
+
+	las = now()
+
+	for N = 8:4:20
+		for p = 0.1:0.04:0.3
+			iN = N÷4 - 1
+			ip = Int(round(p/0.04 - 0.5)) - 1
+
+			Ss[ip, iN] = clif_avg_S(N, 2*N, 2000, p=p, evol=true, f = s -> mutual_inf(s, N÷3, 2*N÷3))
+
+			this = now()
+
+			times[ip, iN] = this - las
+
+			println((iN, ip, times[ip, iN], Ss[ip, iN]))
+
+			las = this
+		end
+	end
+
+	fin = now()
+
+	print("Total: ")
+	println(fin - beg)
+	serialize("clif_s_3", (Ss, times))
+	run(`say "all done"`)
+	println(Ss)
+	show(plot(Ss))
+end
+
+main()
+
+

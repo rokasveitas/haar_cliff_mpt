@@ -274,10 +274,11 @@ function main()
 
 	print("Total: ")
 	println(fin - beg)
-	run(`say "all done"`)
-	println(Ss)
 	serialize("haar_s_3", (Ss, times))
-	show(plot(Ss))
+	# run(`say "all done"`)
+	println(Ss)
+	
+	# show(plot(Ss))
 end
 
 main()
