@@ -364,11 +364,11 @@ function find_pow(x::Vector, y::Vector)
 		end
 	end
 
-	filter!(a -> a!=0, lx)
-	filter!(a -> a!=0, ly)
+	filter!(a -> a!=0, lx) # make sure we don't take
+	filter!(a -> a!=0, ly) # any log(0)
 
-	println(lx)
-	println(ly)
+	# println(lx)
+	# println(ly)
 
 	n = length(lx)
 
@@ -382,45 +382,54 @@ function find_pow(x::Vector, y::Vector)
 	beta = (n * dot(lx, ly) - sum(lx) * sum(ly)) / (n * dot(lx, lx) - sum(lx)^2)
 	alph = (sum(ly) - beta * sum(lx)) / n
 
-	return (pow=beta, coef=exp(alph), n=n)
+	return (pow=beta, coef=exp(alph), n=n, f = x -> exp(alph) * x^beta)
 end
 
-
+#=
+# For finding the mutual information dependence on qubit separation
 function main()
 	beg = now()
+	Ns = 9:3:49
+	Ss = zeros(size(Ns))
 
-	Ss = Array{Vector{Float64}}(undef, (6, 4))
-	times = zeros(Millisecond, (6, 4))
+	for i in 1:size(Ns)[1]
+		N = Ns[i]
+		Ss[i] = clif_avg_S(N,
+						   N,
+						   10000;
+						   p=0.16,     # clif criticality happens at 0.16 
+						   evol=false,
+						   f = s -> mutual_inf(s, N÷3, 2*N÷3))
 
-	las = now()
-
-	for N = 8:4:20
-		for p = 0.1:0.04:0.3
-			iN = N÷4 - 1
-			ip = Int(round(p/0.04 - 0.5)) - 1
-
-			Ss[ip, iN] = clif_avg_S(N, 2*N, 2000, p=p, evol=true, f = s -> mutual_inf(s, N÷3, 2*N÷3))
-
-			this = now()
-
-			times[ip, iN] = this - las
-
-			println((iN, ip, times[ip, iN], Ss[ip, iN]))
-
-			las = this
-		end
+		serialize("clif_mutinf_3", (Ss, 100000, now() - beg))
 	end
 
-	fin = now()
+	return
+end
+=#
+function main()
+	beg = now()
+	Ns = 5:3:48
+	Ss = zeros(size(Ns))
 
-	print("Total: ")
-	println(fin - beg)
-	serialize("clif_s_3", (Ss, times))
-	run(`say "all done"`)
-	println(Ss)
-	show(plot(Ss))
+	for i in 1:size(Ns)[1]
+		N = Ns[i]
+		Ss[i] = clif_avg_S(N,
+						   N,
+						   10000;
+						   p=0.16,     # clif criticality happens at 0.16 
+						   evol=false,
+						   f = s -> mutual_inf(s, (N+1)÷3, 2*(N+1)÷3))
+
+		serialize("clif_mutinf_4", (Ss, 100000, 5:3:48, now() - beg, "2mod3"))
+	end
+
+	return
 end
 
-main()
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end
 
 

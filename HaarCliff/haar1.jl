@@ -203,19 +203,19 @@ function run_brick_haar(
 		end
 
 		if evol && d%2 == 1
-			push!(S, mutual_inf(ψ, N÷3, 2*N÷3))
+			push!(S, mutual_inf(ψ, (N+1)÷3, 2*(N+1)÷3))
 		end
 	end
 
 	if !evol
-		S = mutual_inf(ψ, N÷3, 2*N÷3)
+		S = mutual_inf(ψ, (N+1)÷3, 2*(N+1)÷3)
 	end
 	#println(S)
 	#println(typeof(S))
 	return (ψ , S)
 end
 
-function haar_avg_S(N::Int, depth::Int, ite::Int, p::Real, evol::Bool)
+function haar_avg_S(N::Int, depth::Int, ite::Int; p::Real, evol::Bool)
 	#global savg = zeros(depth)
 	#println(savg)
 	#ents = []
@@ -242,46 +242,29 @@ function haar_avg_S(N::Int, depth::Int, ite::Int, p::Real, evol::Bool)
 end
 
 
-#if abspath(PROGRAM_FILE) == @__FILE__ # if run directly from shell
-
+# For finding the mutual information dependence on qubit separation
 function main()
 	beg = now()
-	
+	Ns = 9:3:24
+	Ss = zeros(size(Ns))
 
-	Ss = zeros(6, 4)
-	times = zeros(Millisecond, (6, 4))
+	for i in 1:size(Ns)[1]
+		N = Ns[i]
+		Ss[i] = haar_avg_S(N,
+						   N,
+						   200;
+						   p=0.1,     # haar criticality ostensibly happens at 0.26
+						   evol=false)
 
-	las = now()
-
-	for N = 8:4:20
-		for p = 0.1:0.04:0.3
-			iN = N÷4 - 1
-			ip = Int(round(p/0.04 - 0.5)) - 1
-
-			Ss[ip, iN] = haar_avg_S(N, 2*N, 200, p, false)
-
-			this = now()
-
-			times[ip, iN] = this - las
-
-			println((iN, ip, times[ip, iN], Ss[ip, iN]))
-
-			las = this
-		end
+		serialize("haar_mutinf_4", (Ss, 200, now()-beg, "2mod3", 0.1))
 	end
 
-	fin = now()
-
-	print("Total: ")
-	println(fin - beg)
-	serialize("haar_s_3", (Ss, times))
-	# run(`say "all done"`)
-	println(Ss)
-	
-	# show(plot(Ss))
+	return
 end
 
-main()
+if abspath(PROGRAM_FILE) == @__FILE__ # if run directly from shell
+	main()
+end
 
 
 
