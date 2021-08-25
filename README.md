@@ -1,6 +1,6 @@
 # haar_cliff_mpt
 
-This is a repository containing all of my work in Roger Melko's group from Summer 2021.
+This is a repository containing all of my work in the PIQuIL from Summer 2021.
 
 ## Effect of Mølmer-Sørensen Angle on Critical Measurement Rate
 
@@ -8,5 +8,7 @@ My first question was extending the work in [this paper](https://arxiv.org/abs/2
 
 ## Side-by-Side Simulation of Haar and Clifford Circuits
 
-Circuits of the type examined above can be studied for many different choices of the random unitary gates.  One option is to sample uniformly from the entire two-qubit unitary group *U(4)*: this is possible due to the existence of the Haar measure, which is the unique translation-invariant probability measure for any locally-compact topological group, like *U(4)*.  This requires the full capabilities of our matrix product state (MPS) formalism for accurate simulation, which we do in PastaQ.  Another option is to sample from the Clifford group, which is the finite group that permutes the states which are "stabilized" by tensor products of single-qubit Pauli operators.  This group is interesting because it is efficiently simulable on a classical computer according to the stabilizer formalism as developed by Gottesman (2004 or whatever).
+Circuits of the type examined above can be studied for many different choices of the random unitary gates.  One option is to sample uniformly from the entire two-qubit unitary group *U(4)*: this is possible due to the existence of the Haar measure, which is the unique translation-invariant probability measure for any locally-compact topological group, like *U(4)*.  This requires the full capabilities of our matrix product state (MPS) formalism for accurate simulation, which we do in PastaQ.  Another option is to sample from the Clifford group, which is the finite group that permutes the states which are "stabilized" by tensor products of single-qubit Pauli operators.  This group is interesting because it is efficiently simulable on a classical computer according to Gottesman-Knill theorem, improved upon by [Aaronson](https://arxiv.org/pdf/quant-ph/0406196.pdf).
+
+The question that I have been working on this summer is regarding the mutual information, one of many possible ways to quantify the entanglement in a quantum system.  My setup has been adopted from page 11 of [Skinner 2019](https://arxiv.org/pdf/1808.05953.pdf): I measure the mutual information between the *N/3* and *2N/3* qubits in a system of size *N*.  I tried to characterize the power law dependence of the mutual information of two qubits separated by distance *x = N/3*.  Skinner finds that the Haar dependence has power -4, but no work has previously been done on the Clifford case, so my goal has been to reproduce his findings and see how they differ from Clifford-random circuits.
 
