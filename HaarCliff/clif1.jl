@@ -421,7 +421,7 @@ function main()
 						   evol=false,
 						   f = s -> mutual_inf(s, (N+1)÷3, 2*(N+1)÷3))
 
-		serialize("clif_mutinf_4", (Ss, 100000, 5:3:48, now() - beg, "2mod3"))
+		serialize("clif_mutinf_5", (Ss, 100000, 5:3:48, now() - beg, "2mod3"))
 	end
 
 	return

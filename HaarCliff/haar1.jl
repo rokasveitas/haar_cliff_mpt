@@ -56,7 +56,7 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 	sa = siteind(psi, a)
 	sb = siteind(psi, b)
 	la = linkind(psi, a-1)
-	lb = linkind(psi, b)
+	lb = linkind(psi, b-1)
 
 	U, S, V = svd(rho, sa, sb)
 
@@ -70,9 +70,16 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 
 	# Now compute individual A and B entanglement entropies.
 
-	orthogonalize!(psi, a)
+	# orthogonalize!(psi, a)
 
-	U, S, V = isnothing(la) ? svd(psi[a], sa) : svd(psi[a], (la, sa))
+	# U, S, V = isnothing(la) ? svd(psi[a], sa) : svd(psi[a], (la, sa))
+
+	orthogonalize!(psi,a)
+
+	rho_a = isnothing(la) ? psi[a] : prime(psi[a], la)
+	rho_a *= prime(dag(psi[a]), "Site")
+	U, S, V = svd(rho_a, sa)
+
 	A = 0.0
 	for i=1:dim(S, 1)
 		p = S[i,i]^2
@@ -82,9 +89,16 @@ function mutual_inf(psi0::MPS, a::Int, b::Int)
 	# println("A: ")
 	# println(A)
 
-	orthogonalize!(psi, b)
+	# orthogonalize!(psi, b)
 
-	U, S, V = isnothing(lb) ? svd(psi[b], sb) : svd(psi[b], (lb, sb))
+	# U, S, V = isnothing(lb) ? svd(psi[b], sb) : svd(psi[b], (lb, sb))
+
+	orthogonalize!(psi,b)
+
+	rho_b = isnothing(lb) ? psi[a=b] : prime(psi[b], lb)
+	rho_b *= prime(dag(psi[b]), "Site")
+	U, S, V = svd(rho_b, sb)
+
 	B = 0.0
 	for i=1:dim(S, 1)
 		p = S[i,i]^2
@@ -253,10 +267,10 @@ function main()
 		Ss[i] = haar_avg_S(N,
 						   N,
 						   200;
-						   p=0.1,     # haar criticality ostensibly happens at 0.26
+						   p=0.26,     # haar criticality ostensibly happens at 0.26
 						   evol=false)
 
-		serialize("haar_mutinf_4", (Ss, 200, now()-beg, "2mod3", 0.1))
+		serialize("haar_mutinf_8", (Ss, 200, now()-beg, "2mod3",  9:3:24, 0.26))
 	end
 
 	return
