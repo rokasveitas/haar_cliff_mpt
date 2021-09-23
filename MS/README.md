@@ -10,4 +10,18 @@ so for each potential value of *p<sub>c</sub>*, we perform a linear regression o
 
 ![image](https://user-images.githubusercontent.com/5233686/130820506-97f97b41-3045-462b-ae48-9d3ae2369241.png)
 
-As is evident, the data is not very good.  I have run about 800 jobs so far, but of the 2016-element set of parameter combinations, the minimum number of runs is 34, the maximum is 107, and the average is 98.  This is not enough to see clean data yet, so Graham is still running jobs and will be until we see clean local minima in these plots.
+Above is the data from late August—it is clearly not very good.  I had run about 800 jobs so far, but of the 2016-element set of parameter combinations, the minimum number of runs was 34, the maximum was 107, and the average was 98.  This is not enough to see clean data yet, so I sent Graham to run more jobs.
+
+
+![image](https://user-images.githubusercontent.com/5233686/134468282-5fd2b987-76de-419a-aa8d-eb2372a76f61.png)
+
+I set Graham to run this more times on August 23, and it is still running today, September 22.  Above is the current data.  The improvement is not great.  At this point, the min-ave-max for runs is 41-111-122.  The local minima are not really visible, and it's not clear that they'll necessarily emerge with more data, but it's really still too early to tell here.
+
+# Code Overview
+
+Here are the most relevant files in this directory and brief descriptions of their purpose:
+- `ms_rand.jl` is the Julia file that actually runs these simulations.  It serializes its results into `msdata`.
+- `ms_rand.sh` is the shell file that calls an array job with SLURM.  In order to run more jobs, the bounds that describe its array start and stop should be adjusted so that it won't overwrite any previous `msdata` files.
+- `avg.jl` takes all of the current serial files in `msdata` and creates the serial files `Rs` and `denoms`.
+- `Rs` is what is plotted above: it's the residuals of the fit of our data to the critical exponent expression.
+- `denoms` is an array of how many runs each parameter tuple has had.  Its name comes from the fact that its values are the denominators when computing average entanglement.
